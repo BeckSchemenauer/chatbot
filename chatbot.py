@@ -1,6 +1,7 @@
 import socket
 import sys
 import time
+import threading
 
 
 class IRC:
@@ -48,32 +49,69 @@ class Bot:
         self.port = port
         self.channel = channel
         self.botnick = botnick
+        self.in_conversation = False
+        self.is_first_speaker = True
+        self.time_since_last_contact = 0
+        self.running = True
+
+        # Start the background thread to update time_since_last_contact
+        self.thread = threading.Thread(target=self._update_time_since_last_contact)
+        self.thread.daemon = True  # Ensures the thread stops when the program exits
+        self.thread.start()
 
         self.irc = IRC()
         self.irc.connect(server, port, channel, botnick, "", "")
 
+    def _update_time_since_last_contact(self):
+        # Increment time_since_last_contact every second
+        while self.running:
+            time.sleep(1)  # Wait for 1 second
+            self.time_since_last_contact += 1  # Increase by 1
+
+    def stop(self):
+        # Stop the background thread
+        self.running = False
+        self.thread.join()
+
     def get_response(self):
         return self.irc.get_response()
 
-    def parse_response(self, msg):
-        if "PRIVMSG" in msg and self.channel in msg and self.botnick + ":" in msg:
+    def parse_response(self, text):
+        if "PRIVMSG" in text and self.channel in text and self.botnick + ":" in text:
 
             time.sleep(1.5)
 
-            if "die!" in msg:
+            if "die!" in text:
                 self.die()
-            if "hello" in msg:
-                self.say_hello(msg)
-            if "usage" in msg or "who are you?" in msg:
+            if "hello" in text:
+                self.respond_to_hello(text)
+            if "usage" in text or "who are you?" in text:
                 self.usage()
-            if "users" in msg:
+            if "users" in text:
                 self.names()
-            if "forget" in msg:
+            if "forget" in text:
                 self.forget()
 
-    def say_hello(self, msg):
+    def respond_to_hello(self, text):
         user_name = text.split(":")[1].split("!")[0]
-        self.irc.send(self.channel, f"Hi there hello {user_name}")
+        msg = text.split(':', 2)[-1]
+        response_msg = ""
+
+        if self.in_conversation:
+            if self.is_first_speaker:
+                # Bot is giving secondary outreach
+                response_msg = f"Yo {user_name}, I said hi"
+            else:
+                # Bot is responding to secondary outreach
+                response_msg = f"{self.time_since_last_contact} umm, hi"
+        else:
+            # New conversation, bot is second speaker
+            self.is_first_speaker = False
+            self.in_conversation = True
+            response_msg = f"Hi there hello {user_name}"
+
+        self.time_since_last_contact = 0
+        self.irc.send(self.channel, response_msg)
 
     def die(self):
         self.irc.send(self.channel, "really? OK, fine.")
@@ -102,6 +140,10 @@ class Bot:
                 return
 
     def forget(self):
+        self.in_conversation = False
+        self.is_first_speaker = True
+        self.time_since_last_contact = 0
+
         self.irc.send(self.channel, "forgetting everything")
 
 
@@ -114,7 +156,7 @@ _botnick = "bg-test-bot"
 bot = Bot(_server, _port, _channel, _botnick)
 
 while True:
-    text = bot.get_response()
-    print("RECEIVED ==> ", text)
+    response = bot.get_response()
+    print("RECEIVED ==> ", response)
 
-    bot.parse_response(text)
+    bot.parse_response(response)
