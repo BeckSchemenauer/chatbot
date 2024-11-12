@@ -103,7 +103,7 @@ class Bot:
                 response_msg = f"Yo {user_name}, I said hi"
             else:
                 # Bot is responding to secondary outreach
-                response_msg = f"{self.time_since_last_contact} umm, hi"
+                response_msg = f"umm, hi"
         else:
             # New conversation, bot is second speaker
             self.is_first_speaker = False
