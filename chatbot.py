@@ -2,6 +2,7 @@ import socket
 import sys
 import time
 import threading
+import random
 
 
 class IRC:
@@ -10,6 +11,7 @@ class IRC:
     def __init__(self):
         # Deefine the socket
         self.irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.irc.settimeout(5)
 
     def command(self, msg):
         self.irc.send(bytes(msg + "\n", "UTF-8"))
@@ -33,14 +35,85 @@ class IRC:
         self.command("JOIN " + channel)
 
     def get_response(self):
-        time.sleep(1)
-        # Get the response
-        resp = self.irc.recv(2040).decode("UTF-8")
+        try:
+            time.sleep(1)
+            # Attempt to receive data
+            resp = self.irc.recv(2040).decode("UTF-8")
 
-        if resp.find('PING') != -1:
-            self.command('PONG ' + resp.split()[1] + '\r')
+            if 'PING' in resp:
+                self.command('PONG ' + resp.split()[1] + '\r')
 
-        return resp
+            return resp
+        except socket.timeout:
+            # Handle the timeout case if no data is received in the specified duration
+            print("No response received within timeout period.")
+            return ""
+
+
+class BotStatus:
+    NOT_IN_CONVERSATION = 0
+
+    # Bot is first speaker
+    WAITING_FOR_OUTREACH_REPLY = 1
+    WAITING_FOR_SECOND_OUTREACH_REPLY = 2
+    WAITING_FOR_INQUIRY_REPLY = 3
+    WAITING_FOR_INQUIRY2 = 4  # Bot will not give up waiting for the second speaker to make an inquiry
+
+    # Bot is second Speaker
+    WAITING_FOR_INQUIRY = 5  # Bot will not give up waiting for initial inquiry from first speaker
+    WAITING_FOR_INQUIRY2_REPLY = 6
+
+
+class Keywords:
+    GREETINGS = [
+        "Hello",
+        "Hi",
+        "Hey",
+        "What's up",
+        "Nice to see you",
+        "Greetings",
+    ]
+
+    INQUIRIES = [
+        "How are you?",
+        "What's happening?",
+    ]
+
+    SECONDARY_INQUIRIES = [
+        "How about you?",
+        "And yourself?",
+    ]
+
+    INQUIRY_REPLIES = [
+        "I'm good",
+        "I'm fine",
+        "I'm okay",
+        "I'm good, thanks for asking",
+        "I'm fine, thanks for asking",
+        "I'm okay, thanks for asking",
+    ]
+
+    GIVE_UP_FRUSTRATED = [
+        "Ok, forget you.",
+        "Whatever.",
+        "If you didn't want to talk just say so.",
+    ]
+
+    @staticmethod
+    def contains_greeting(message):
+        # Check if any greeting is found in the message
+        for greeting in Keywords.GREETINGS:
+            if greeting.lower() in message.lower():
+                return True
+        return False
+
+    @staticmethod
+    def message_in_set(message, phrase_set):
+        # Check if any phrase from set is found in the message
+        for phrase in phrase_set:
+            if phrase.lower() in message.lower():
+                return True
+        return False
 
 
 class Bot:
@@ -49,8 +122,8 @@ class Bot:
         self.port = port
         self.channel = channel
         self.botnick = botnick
-        self.in_conversation = False
-        self.is_first_speaker = True
+        self.status = BotStatus.NOT_IN_CONVERSATION
+        self.in_conversation_with = None
         self.time_since_last_contact = 0
         self.running = True
 
@@ -80,38 +153,104 @@ class Bot:
         if "PRIVMSG" in text and self.channel in text and self.botnick + ":" in text:
 
             time.sleep(1.5)
+            self.time_since_last_contact = 0
+            user_name = text.split(":")[1].split("!")[0]
 
             if "die!" in text:
                 self.die()
-            if "hello" in text:
-                self.respond_to_hello(text)
-            if "usage" in text or "who are you?" in text:
+            elif Keywords.message_in_set(text, Keywords.GREETINGS):
+                self.respond_to_greeting(user_name)
+            elif Keywords.message_in_set(text, Keywords.INQUIRIES) or Keywords.message_in_set(text, Keywords.SECONDARY_INQUIRIES):
+                self.respond_to_inquiry(user_name)
+            elif "usage" in text or "who are you" in text:
                 self.usage()
-            if "users" in text:
-                self.names()
-            if "forget" in text:
+            elif "users" in text:
+                self.users()
+            elif "forget" in text:
                 self.forget()
 
-    def respond_to_hello(self, text):
-        user_name = text.split(":")[1].split("!")[0]
-        msg = text.split(':', 2)[-1]
-        response_msg = ""
+    def timeout_action(self):
 
-        if self.in_conversation:
-            if self.is_first_speaker:
-                # Bot is giving secondary outreach
-                response_msg = f"Yo {user_name}, I said hi"
-            else:
-                # Bot is responding to secondary outreach
-                response_msg = f"umm, hi"
+        # Not in conversation, starts a new one with a random.
+        if self.status == BotStatus.NOT_IN_CONVERSATION:
+
+            # Reach out to random user
+            user_list = self.names().split()
+            random_user = random.choice(user_list)
+
+            # Override random_user for testing _______________________________________
+            random_user = "beck1"
+
+            msg = f"{random_user}: Hello"
+
+            # Update instance variables
+            self.status = BotStatus.WAITING_FOR_OUTREACH_REPLY
+            self.in_conversation_with = random_user
+            self.time_since_last_contact = 0
+
+        # Needs to reach out again
+        elif self.status == BotStatus.WAITING_FOR_OUTREACH_REPLY:
+            msg = f"{self.in_conversation_with}: Yo, I said hi"
+
+        # Give up frustrated
         else:
-            # New conversation, bot is second speaker
-            self.is_first_speaker = False
-            self.in_conversation = True
-            response_msg = f"Hi there hello {user_name}"
+            give_up_msg = random.choice(Keywords.GIVE_UP_FRUSTRATED).lower()
+            msg = f"{self.in_conversation_with}: {give_up_msg}"
+            bot.forget(send_message=False)
 
-        self.time_since_last_contact = 0
+        self.irc.send(self.channel, msg)
+
+    def respond_to_greeting(self, user_name):
+
+        # New conversation, bot is second speaker
+        if self.status == BotStatus.NOT_IN_CONVERSATION:
+            self.time_since_last_contact = 0
+            self.status = BotStatus.WAITING_FOR_INQUIRY
+            self.in_conversation_with = user_name
+            greeting = random.choice(Keywords.GREETINGS)
+            response_msg = f"{self.in_conversation_with}: {greeting}"
+
+        # Bot is already in conversation
+        elif user_name == self.in_conversation_with:
+
+            # Reset contact clock
+            self.time_since_last_contact = 0
+
+            # Bot just said hi, waiting for user to say hi back
+            if self.status == BotStatus.WAITING_FOR_OUTREACH_REPLY:
+                # Now the bot must give an initial inquiry
+                response_msg = f"{self.in_conversation_with}: {random.choice(Keywords.INQUIRIES)}"
+
+            # Bot is responding to an additional (unnecessary) outreach
+            else:
+                response_msg = f"{self.in_conversation_with}: umm, hi"
+
+        # Bot is not in conversation with this user
+        else:
+            response_msg = f"{user_name}: please don't bother me, I am talking with {self.in_conversation_with}"
+
+        # Send response message
         self.irc.send(self.channel, response_msg)
+
+    def respond_to_inquiry(self, user_name):
+
+        # Ignore inquiry if not in conversation (not greeted first)
+        if self.status == BotStatus.NOT_IN_CONVERSATION:
+            return
+
+        # Inquiry from outside source while in conversation
+        if user_name != self.in_conversation_with:
+            # Tell outside user that bot is busy
+            self.irc.send(self.channel,
+                          f"{user_name}: please don't bother me, I am talking with {self.in_conversation_with}")
+            return
+
+        # Reply to inquiry
+        self.irc.send(self.channel, f"{self.in_conversation_with}: {random.choice(Keywords.INQUIRY_REPLIES)}")
+
+        # Bot is second speaker, this was an initial inquiry, must give one back
+        if self.status == BotStatus.WAITING_FOR_INQUIRY:
+            self.irc.send(self.channel, f"{self.in_conversation_with}: {random.choice(Keywords.SECONDARY_INQUIRIES)}")
 
     def die(self):
         self.irc.send(self.channel, "really? OK, fine.")
@@ -120,6 +259,11 @@ class Bot:
 
     def usage(self):
         self.irc.send(self.channel, f"My name is {self.botnick}. I was created by Beck S and Gavin L, CSC482-01")
+
+    def users(self):
+        user_list = self.names()
+        if user_list:
+            self.irc.send(self.channel, f"Users: {user_list}")
 
     def names(self):
         # Send the NAMES command to get the user list
@@ -132,19 +276,19 @@ class Bot:
             response += resp
             if f" 353 {self.botnick} " in resp:  # '353' is the numeric reply for NAMES
                 # Parse the user list from the response
-                user_list = resp.split(f" 353 {self.botnick} ")[-1].split(':')[1].strip()
+                user_list = resp.split(f" 353 bg-test-bot ")[-1].split(':')[1].strip()
                 print("Users in channel:", user_list)
-                self.irc.send(self.channel, f"Users: {user_list}")
-                return
+                return user_list
             elif f" 366 {self.botnick} " in resp:  # '366' is the end of NAMES list
                 return
 
-    def forget(self):
-        self.in_conversation = False
-        self.is_first_speaker = True
+    def forget(self, send_message=True):
+        self.status = BotStatus.NOT_IN_CONVERSATION
+        self.in_conversation_with = None
         self.time_since_last_contact = 0
 
-        self.irc.send(self.channel, "forgetting everything")
+        if send_message:
+            self.irc.send(self.channel, "forgetting everything")
 
 
 ## IRC Config
@@ -160,3 +304,8 @@ while True:
     print("RECEIVED ==> ", response)
 
     bot.parse_response(response)
+
+    print(bot.time_since_last_contact)
+    if bot.time_since_last_contact > 30:
+        print('++++++++++++++++++++++++++++++++++++++++++++++++')
+        bot.timeout_action()
