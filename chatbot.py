@@ -178,9 +178,6 @@ class Bot:
             user_list = self.names().split()
             random_user = random.choice(user_list)
 
-            # Override random_user for testing _______________________________________
-            random_user = "beck1"
-
             msg = f"{random_user}: Hello"
 
             # Update instance variables
