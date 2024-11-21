@@ -15,7 +15,7 @@ def parse_recipe(data):
 
     print(data["result"]["id"])
 
-    if data["result"]["id"] == "minecraft:orange_wool":
+    if data["result"]["id"] == "minecraft:purpur_slab":
         print()
 
     # Build Item mapping
@@ -26,6 +26,9 @@ def parse_recipe(data):
                 item_mapping[key] = definition["item"].replace("minecraft:", "")
             elif "tag" in definition:
                 item_mapping[key] = definition["tag"].replace("minecraft:", "")
+            # definition is a list, can use multiple blocks
+            else:
+                item_mapping[key] = definition[0]["item"].replace("minecraft:", "")
     elif "ingredients" in data:
         # Process the 'ingredients' array
         for ingredient_dict in data["ingredients"]:
@@ -46,7 +49,7 @@ def parse_recipe(data):
             # This is a list not a dict, likely for dyes
             else:
                 if "group" in data:
-                    counts[f"any_{data["group"]}"] = 1  # ex. any_wool, any_bed
+                    counts[f"of_any_{data["group"]}"] = 1  # ex. any_wool, any_bed
                 else:
                     counts[ingredient_dict[0].get("item")] = 1
 
