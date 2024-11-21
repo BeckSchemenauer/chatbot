@@ -76,13 +76,13 @@ def get_ingredients(string, multiplier, df):
     return msg.replace("_", " ")
 
 
-df = pd.read_csv('recipes_output.csv', delimiter='|')
+# df = pd.read_csv('recipes_output.csv', delimiter='|')
+# #
+# # ingredients = get_ingredients("piston", df)
+# #
+# # print(str(ingredients))
 #
-# ingredients = get_ingredients("piston", df)
+# print(df.head())
 #
-# print(str(ingredients))
-
-print(df.head())
-
-for item in df["result_id"]:
-    print(str(get_ingredients(item, 5, df)))
+# for item in df["result_id"]:
+#     print(str(get_ingredients(item, 5, df)))
