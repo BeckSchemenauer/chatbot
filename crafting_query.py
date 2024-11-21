@@ -5,9 +5,8 @@ import inflect
 
 def is_plural(word):
     word = word.replace("_", " ").split()[-1]
-    print(word)
     plural_word = pluralize(word)
-    return word != plural_word
+    return word == plural_word
 
 
 def use_a_or_an(word):
@@ -17,17 +16,24 @@ def use_a_or_an(word):
 
 
 def pluralize(word):
-    parts = word.split("_")  # Split on underscores
     p = inflect.engine()
-    parts[-1] = p.plural(parts[-1])  # Pluralize the last word
-    return " ".join(parts)  # Recombine
+    parts = word.split("_")  # Split on underscores
 
+    # Check if the last word is already plural
+    if not p.singular_noun(parts[-1]):
+        parts[-1] = p.plural(parts[-1])  # Pluralize only if it's singular
+
+    return " ".join(parts)  # Recombine with underscores
+
+
+def rename_ingredient(ingredient, count):
+    if count > 1:
+        return pluralize(ingredient)
+    return ingredient
 
 def get_ingredients(string, multiplier, df):
     # Filter the DataFrame to the row where `result_id` matches the input string
     matching_row = df[df['result_id'] == string]
-
-    print(matching_row)
 
     # Check if any matching rows exist
     if matching_row.empty:
@@ -43,7 +49,7 @@ def get_ingredients(string, multiplier, df):
         msg += f"{multiplier} "
 
     # Find columns with non-null values and return as a list of tuples
-    info = [(col, row[col]) for col in row.index if pd.notnull(row[col])]
+    info = [(col, row[col]) for col in row.index if pd.notnull(row[col]) and col != "recipe"]
     target_item = info[0][1]
 
     # Check if item is already plural
@@ -54,21 +60,29 @@ def get_ingredients(string, multiplier, df):
         msg += f"{pluralize(target_item)}, you need "
     # This is a singular item, use either a or an
     else:
+        print()
         msg += f"{use_a_or_an(target_item)} {target_item}, you need "
 
     if len(info) > 2:
         for item in info[1:-1]:
-            msg += f"{multiplier * int(item[1])} {item[0]}, "
-        msg += f"and {multiplier * int(info[-1][1])} {info[-1][0]}."
+            count = multiplier * int(item[1])
+            msg += f"{count} {rename_ingredient(item[0], count)}, "
+        final_item_count = multiplier * int(info[-1][1])
+        msg += f"and {final_item_count} {rename_ingredient(info[-1][0], final_item_count)}."
     else:
-        msg += f"{multiplier * int(info[1][1])} {info[1][0]}."
+        count = multiplier * int(info[1][1])
+        msg += f"{count} {rename_ingredient(info[1][0], count)}."
 
     return msg.replace("_", " ")
 
-# df = pd.read_csv('recipes_output.csv')
+
+df = pd.read_csv('recipes_output.csv', delimiter='|')
 #
 # ingredients = get_ingredients("piston", df)
 #
 # print(str(ingredients))
 
-print(is_plural("white_wool"))
+print(df.head())
+
+for item in df["result_id"]:
+    print(str(get_ingredients(item, 5, df)))
