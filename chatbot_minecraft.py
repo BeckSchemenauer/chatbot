@@ -178,12 +178,32 @@ class Bot:
             elif Keywords.message_in_set(text, Keywords.INQUIRIES) or Keywords.message_in_set(text,
                                                                                               Keywords.SECONDARY_INQUIRIES):
                 self.respond_to_inquiry(user_name)
+            elif Keywords.message_in_set(text, Keywords.INQUIRY_REPLIES):
+                self.respond_to_inquiry_reply(user_name)
             elif "usage" in text or "who are you" in text:
                 self.usage()
             elif "users" in text:
                 self.users()
             elif "forget" in text:
                 self.forget()
+
+    def respond_to_inquiry_reply(self, user_name):
+
+        # Ignore reply if not in conversation
+        if self.status == BotStatus.NOT_IN_CONVERSATION:
+            return
+
+        # Inquiry from outside source while in conversation
+        if user_name != self.in_conversation_with:
+            # Tell outside user that bot is busy
+            self.irc.send(self.channel,
+                          f"{user_name}: please don't bother me, I am talking with {self.in_conversation_with}")
+            return
+
+        if self.status == BotStatus.WAITING_FOR_INQUIRY2_REPLY:
+            # Reply to inquiry
+            self.irc.send(self.channel, f"{self.in_conversation_with}: It was nice talking with you")
+            self.forget()
 
     def get_recipe(self, user_name, text):
         # Match "recipe: <target_block> [count]" with underscores allowed in the target_block
@@ -218,7 +238,7 @@ class Bot:
             # Reach out to random user
             user_list = self.names().split()
             random_user = random.choice(user_list)
-            while random_user == self.botnick:
+            while random_user == self.botnick or random_user == self.channel:
                 random_user = random.choice(user_list)
 
             msg = f"{random_user}: {random.choice(Keywords.GREETINGS)}"
@@ -262,6 +282,7 @@ class Bot:
             if self.status == BotStatus.WAITING_FOR_OUTREACH_REPLY:
                 # Now the bot must give an initial inquiry
                 response_msg = f"{self.in_conversation_with}: {random.choice(Keywords.INQUIRIES)}"
+                self.status = BotStatus.WAITING_FOR_INQUIRY_REPLY
 
             # Bot is responding to an additional (unnecessary) outreach
             else:
@@ -293,6 +314,9 @@ class Bot:
         # Bot is second speaker, this was an initial inquiry, must give one back
         if self.status == BotStatus.WAITING_FOR_INQUIRY:
             self.irc.send(self.channel, f"{self.in_conversation_with}: {random.choice(Keywords.SECONDARY_INQUIRIES)}")
+            self.status = BotStatus.WAITING_FOR_SECOND_OUTREACH_REPLY
+        else:
+            self.forget()
 
     def die(self):
         self.irc.send(self.channel, "really? OK, fine.")
@@ -325,7 +349,7 @@ class Bot:
             response += resp
             if f" 353 {self.botnick} " in resp:  # '353' is the numeric reply for NAMES
                 # Parse the user list from the response
-                user_list = resp.split(f" 353 bg-test-bot ")[-1].split(':')[1].strip()
+                user_list = resp.split(f" 353 {self.botnick} ")[-1].split(':')[1].strip()
                 print("Users in channel:", user_list)
                 return user_list
             elif f" 366 {self.botnick} " in resp:  # '366' is the end of NAMES list
