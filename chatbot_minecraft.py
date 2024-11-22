@@ -344,7 +344,7 @@ class Bot:
 _server = "irc.libera.chat"  # Provide a valid server IP/Hostname
 _port = 6667
 _channel = "#csc482"
-_botnick = "bg-test-bot"
+_botnick = "bg-bot"
 
 bot = Bot(_server, _port, _channel, _botnick)
 
