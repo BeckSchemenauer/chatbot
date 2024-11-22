@@ -120,14 +120,6 @@ class Keywords:
     ]
 
     @staticmethod
-    def contains_greeting(message):
-        # Check if any greeting is found in the message
-        for greeting in Keywords.GREETINGS:
-            if greeting.lower() in message.lower():
-                return True
-        return False
-
-    @staticmethod
     def message_in_set(message, phrase_set):
         # Check if any phrase from set is found in the message
         for phrase in phrase_set:
@@ -201,7 +193,8 @@ class Bot:
             target = match.group(1)
             count = int(match.group(2)) if match.group(2) else 1
         else:
-            self.irc.send(self.channel, "Invalid format. Request should be in the format: \"recipe: <target_block> [count]\"")
+            self.irc.send(self.channel,
+                          "Invalid format. Request should be in the format: \"recipe: <target_block> [count]\"")
             return
 
         ingredients = get_ingredients(target, count, self.minecraft_df)
@@ -298,7 +291,14 @@ class Bot:
         sys.exit()
 
     def usage(self):
-        self.irc.send(self.channel, f"My name is {self.botnick}. I was created by Beck S and Gavin L, CSC482-01")
+        self.irc.send(self.channel, f"My name is {self.botnick}. I was created by Beck S and Gavin L, CSC482-01.")
+        self.irc.send(self.channel, "Commands include:")
+        self.irc.send(self.channel, "recipe: <target_block> [count] (tells you the required ingredients)")
+        self.irc.send(self.channel, f"A greeting to start conversation with {Keywords.GREETINGS}")
+        self.irc.send(self.channel, "usage (prints out all this)")
+        self.irc.send(self.channel, "users (lists the current users)")
+        self.irc.send(self.channel, "forget (makes me forget everything)")
+        self.irc.send(self.channel, "die! (makes me die)")
 
     def users(self):
         user_list = self.names()
@@ -345,7 +345,5 @@ while True:
 
     bot.parse_response(response)
 
-    print(bot.time_since_last_contact)
     if bot.time_since_last_contact > 30:
-        print('++++++++++++++++++++++++++++++++++++++++++++++++')
         bot.timeout_action()
