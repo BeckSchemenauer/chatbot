@@ -1,6 +1,6 @@
 import pandas as pd
-from nltk.stem import WordNetLemmatizer
 import inflect
+import ast
 
 
 def is_plural(word):
@@ -31,7 +31,8 @@ def rename_ingredient(ingredient, count):
         return pluralize(ingredient)
     return ingredient
 
-def get_ingredients(string, multiplier, df):
+
+def get_ingredients_and_recipe(string, multiplier, df):
     # Filter the DataFrame to the row where `result_id` matches the input string
     matching_row = df[df['result_id'] == string]
 
@@ -47,6 +48,8 @@ def get_ingredients(string, multiplier, df):
 
     if multiplier > 1:
         msg += f"{multiplier} "
+    else:
+        multiplier = 1
 
     # Find columns with non-null values and return as a list of tuples
     info = [(col, row[col]) for col in row.index if pd.notnull(row[col]) and col != "recipe"]
@@ -73,8 +76,9 @@ def get_ingredients(string, multiplier, df):
         count = multiplier * int(info[1][1])
         msg += f"{count} {rename_ingredient(info[1][0], count)}."
 
-    return msg.replace("_", " ")
+    recipe = ast.literal_eval(row["recipe"])
 
+    return msg.replace("_", " "), recipe
 
 # df = pd.read_csv('recipes_output.csv', delimiter='|')
 # #

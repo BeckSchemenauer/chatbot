@@ -4,7 +4,7 @@ import time
 import threading
 import random
 import pandas as pd
-from crafting_query import get_ingredients
+from crafting_query import get_ingredients_and_recipe
 import re
 
 
@@ -197,9 +197,18 @@ class Bot:
                           "Invalid format. Request should be in the format: \"recipe: <target_block> [count]\"")
             return
 
-        ingredients = get_ingredients(target, count, self.minecraft_df)
+        ingredients, recipe = get_ingredients_and_recipe(target, count, self.minecraft_df)
         print(ingredients)
         self.irc.send(self.channel, f"{user_name}: " + str(ingredients))
+
+        # # Ensure uniform spacing
+        # max_width = max(len(item) for item in recipe)
+        # formatted_items = [item.ljust(max_width) for item in recipe]
+        #
+        # # Send each row to the IRC channel
+        # for i in range(0, 9, 3):
+        #     row = " | ".join(formatted_items[i:i + 3])
+        #     self.irc.send(self.channel, row)
 
     def timeout_action(self):
 
