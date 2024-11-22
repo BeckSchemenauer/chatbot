@@ -170,7 +170,7 @@ class Bot:
             user_name = text.split(":")[1].split("!")[0]
 
             if "recipe" in text:
-                self.get_recipe(text)
+                self.get_recipe(user_name, text)
             elif "die!" in text:
                 self.die()
             elif Keywords.message_in_set(text, Keywords.GREETINGS):
@@ -185,7 +185,7 @@ class Bot:
             elif "forget" in text:
                 self.forget()
 
-    def get_recipe(self, text):
+    def get_recipe(self, user_name, text):
         # Match "recipe: <target_block> [count]" with underscores allowed in the target_block
         match = re.match(r'.*recipe:\s*([\w_]+)\s*(\d+)?', text)
         if match:
@@ -199,7 +199,7 @@ class Bot:
 
         ingredients = get_ingredients(target, count, self.minecraft_df)
         print(ingredients)
-        self.irc.send(self.channel, str(ingredients))
+        self.irc.send(self.channel, f"{user_name}: " + str(ingredients))
 
     def timeout_action(self):
 
@@ -293,7 +293,7 @@ class Bot:
     def usage(self):
         self.irc.send(self.channel, f"My name is {self.botnick}. I was created by Beck S and Gavin L, CSC482-01.")
         self.irc.send(self.channel, "Commands include:")
-        self.irc.send(self.channel, "recipe: <target_block> [count] (tells you the required ingredients)")
+        self.irc.send(self.channel, "recipe: <target_block> [count] (tells you the required ingredients, built by Beck S)")
         self.irc.send(self.channel, f"A greeting to start conversation with {Keywords.GREETINGS}")
         self.irc.send(self.channel, "usage (prints out all this)")
         self.irc.send(self.channel, "users (lists the current users)")
