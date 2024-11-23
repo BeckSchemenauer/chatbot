@@ -203,7 +203,7 @@ class Bot:
         if self.status == BotStatus.WAITING_FOR_INQUIRY2_REPLY:
             # Reply to inquiry
             self.irc.send(self.channel, f"{self.in_conversation_with}: It was nice talking with you")
-            self.forget()
+            self.forget(send_message=False)
 
     def get_recipe(self, user_name, text):
         # Match "recipe: <target_block> [count]" with underscores allowed in the target_block
@@ -314,7 +314,7 @@ class Bot:
         # Bot is second speaker, this was an initial inquiry, must give one back
         if self.status == BotStatus.WAITING_FOR_INQUIRY:
             self.irc.send(self.channel, f"{self.in_conversation_with}: {random.choice(Keywords.SECONDARY_INQUIRIES)}")
-            self.status = BotStatus.WAITING_FOR_SECOND_OUTREACH_REPLY
+            self.status = BotStatus.WAITING_FOR_INQUIRY2_REPLY
         else:
             self.forget()
 
@@ -327,6 +327,7 @@ class Bot:
         self.irc.send(self.channel, f"My name is {self.botnick}. I was created by Beck S and Gavin L, CSC482-01.")
         self.irc.send(self.channel, "Commands include:")
         self.irc.send(self.channel, "recipe: <target_block> [count] (tells you the required ingredients, built by Beck S)")
+        self.irc.send(self.channel, "I can speak multiple languages, start talking in another language or ask me, 'talk to me in X' language. (built by Gavin L, not available in this version)")
         self.irc.send(self.channel, f"A greeting to start conversation with {Keywords.GREETINGS}")
         self.irc.send(self.channel, "usage (prints out all this)")
         self.irc.send(self.channel, "users (lists the current users)")
