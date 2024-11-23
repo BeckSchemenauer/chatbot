@@ -1,13 +1,53 @@
-Bot gets ignored as first speaker:
+# Bot gets ignored as first speaker:
 [12:03:18 PM] <bg-bot> ScottP: Hi
 [12:03:54 PM] <bg-bot> ScottP: I said HI!
 [12:04:27 PM] <bg-bot> ScottP: if you didn't want to talk just say so.
 
-Bot is first speaker:
-[12:09:32 PM] <bg-bot> beck1: Nice to see you
-[12:09:43 PM] <beck1> bg-bot: hey
-[12:09:45 PM] <bg-bot> beck1: How are you?
-[12:09:48 PM] <beck1> I'm fine
-[12:09:53 PM] <beck1> bg-bot: I'm fine
-[12:09:59 PM] <beck1> bg-bot: How are you?
-[12:10:00 PM] <bg-bot> beck1: I'm okay
+# Usage & Users:
+[8:12:08 PM] → bg-bot has joined
+[8:12:09 PM] <beck1> bg-bot: usage
+[8:12:11 PM] <bg-bot> My name is bg-bot. I was created by Beck S and Gavin L, CSC482-01.
+[8:12:12 PM] <bg-bot> Commands include:
+[8:12:12 PM] <bg-bot> I can speak multiple languages, start talking in another language or ask me, 'talk to me in X' language. (built by Gavin L, not available in this version)
+[8:12:12 PM] <bg-bot> recipe: <target_block> [count] (tells you the required ingredients, built by Beck S)
+[8:12:12 PM] <bg-bot> users (lists the current users)
+[8:12:12 PM] <bg-bot> usage (prints out all this)
+[8:12:12 PM] <bg-bot> A greeting to start conversation with ['Hello', 'Hi', 'Hey', "What's up", 'Nice to see you', 'Greetings']
+[8:12:13 PM] <bg-bot> forget (makes me forget everything)
+[8:12:13 PM] <bg-bot> die! (makes me die)
+[8:12:20 PM] <beck1> bg-bot: users
+[8:12:23 PM] <bg-bot> Users: bg-bot beck1 @foaad_office
+
+# Bot is second speaker
+[8:12:26 PM] <beck1> bg-bot: hi
+[8:12:28 PM] <bg-bot> beck1: Hey
+[8:12:34 PM] <beck1> bg-bot: How are you?
+[8:12:37 PM] <bg-bot> beck1: I'm fine
+[8:12:37 PM] <bg-bot> beck1: And you?
+[8:12:44 PM] <beck1> bg-bot: I'm good
+[8:12:46 PM] <bg-bot> beck1: It was nice talking with you
+
+# Bot is first speaker
+[8:13:23 PM] <bg-bot> beck1: What's up
+[8:13:29 PM] <beck1> bg-bot: Hey
+[8:13:31 PM] <bg-bot> beck1: How are you?
+[8:13:35 PM] <beck1> bg-bot: I'm good
+[8:13:53 PM] <beck1> bg-bot: And you?
+[8:13:55 PM] <bg-bot> beck1: I'm fine, thanks for asking
+
+# Phase 3 Implementation: Beck (Minecraft Crafting Recipe)
+[8:14:24 PM] <beck1> bg-bot: recipe: piston
+[8:14:26 PM] <bg-bot> beck1: To craft a piston, you need 1 iron ingot, 4 cobblestones, 3 planks, and 1 redstone.
+
+[8:15:14 PM] <beck1> bg-bot: recipe: fishing_rod 10
+[8:15:16 PM] <bg-bot> beck1: To craft 10 fishing rods, you need 30 sticks, and 20 strings.
+
+[8:15:32 PM] <beck1> bg-bot: recipe: oak_door
+[8:15:34 PM] <bg-bot> beck1: To craft an oak door, you need 6 oak planks.
+
+[8:15:38 PM] <beck1> bg-bot: recipe: oak_stairs
+[8:15:40 PM] <bg-bot> beck1: To craft oak stairs, you need 6 oak planks.
+
+# Die command
+[8:15:53 PM] <beck1> bg-bot: die!
+[8:15:55 PM] <bg-bot> really? OK, fine.
