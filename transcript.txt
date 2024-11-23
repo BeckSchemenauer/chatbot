@@ -1,0 +1,13 @@
+Bot gets ignored as first speaker:
+[12:03:18 PM] <bg-bot> ScottP: Hi
+[12:03:54 PM] <bg-bot> ScottP: I said HI!
+[12:04:27 PM] <bg-bot> ScottP: if you didn't want to talk just say so.
+
+Bot is first speaker:
+[12:09:32 PM] <bg-bot> beck1: Nice to see you
+[12:09:43 PM] <beck1> bg-bot: hey
+[12:09:45 PM] <bg-bot> beck1: How are you?
+[12:09:48 PM] <beck1> I'm fine
+[12:09:53 PM] <beck1> bg-bot: I'm fine
+[12:09:59 PM] <beck1> bg-bot: How are you?
+[12:10:00 PM] <bg-bot> beck1: I'm okay
