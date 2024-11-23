@@ -1,15 +1,132 @@
+import os
 import socket
 import sys
 import time
 import threading
 import random
+from langdetect import detect
+from google.cloud import translate_v2 as translate
+
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "./calcium-centaur-442221-m9-2e88c3bfe90d.json"
+
+LANGUAGE_CODES = {
+    "afrikaans": "af",
+    "albanian": "sq",
+    "amharic": "am",
+    "arabic": "ar",
+    "armenian": "hy",
+    "azerbaijani": "az",
+    "basque": "eu",
+    "belarusian": "be",
+    "bengali": "bn",
+    "bosnian": "bs",
+    "bulgarian": "bg",
+    "catalan": "ca",
+    "cebuano": "ceb",
+    "chinese (simplified)": "zh-CN",
+    "chinese (traditional)": "zh-TW",
+    "corsican": "co",
+    "croatian": "hr",
+    "czech": "cs",
+    "danish": "da",
+    "dutch": "nl",
+    "english": "en",
+    "esperanto": "eo",
+    "estonian": "et",
+    "filipino": "tl",
+    "finnish": "fi",
+    "french": "fr",
+    "frisian": "fy",
+    "galician": "gl",
+    "georgian": "ka",
+    "german": "de",
+    "greek": "el",
+    "gujarati": "gu",
+    "haitian creole": "ht",
+    "hausa": "ha",
+    "hawaiian": "haw",
+    "hebrew": "iw",
+    "hindi": "hi",
+    "hmong": "hmn",
+    "hungarian": "hu",
+    "icelandic": "is",
+    "igbo": "ig",
+    "indonesian": "id",
+    "irish": "ga",
+    "italian": "it",
+    "japanese": "ja",
+    "javanese": "jw",
+    "kannada": "kn",
+    "kazakh": "kk",
+    "khmer": "km",
+    "kinyarwanda": "rw",
+    "korean": "ko",
+    "kurdish (kurmanji)": "ku",
+    "kyrgyz": "ky",
+    "lao": "lo",
+    "latin": "la",
+    "latvian": "lv",
+    "lithuanian": "lt",
+    "luxembourgish": "lb",
+    "macedonian": "mk",
+    "malagasy": "mg",
+    "malay": "ms",
+    "malayalam": "ml",
+    "maltese": "mt",
+    "maori": "mi",
+    "marathi": "mr",
+    "mongolian": "mn",
+    "myanmar (burmese)": "my",
+    "nepali": "ne",
+    "norwegian": "no",
+    "nyanja (chichewa)": "ny",
+    "odia (oriya)": "or",
+    "pashto": "ps",
+    "persian": "fa",
+    "polish": "pl",
+    "portuguese": "pt",
+    "punjabi": "pa",
+    "romanian": "ro",
+    "russian": "ru",
+    "samoan": "sm",
+    "scots gaelic": "gd",
+    "serbian": "sr",
+    "sesotho": "st",
+    "shona": "sn",
+    "sindhi": "sd",
+    "sinhala": "si",
+    "slovak": "sk",
+    "slovenian": "sl",
+    "somali": "so",
+    "spanish": "es",
+    "sundanese": "su",
+    "swahili": "sw",
+    "swedish": "sv",
+    "tajik": "tg",
+    "tamil": "ta",
+    "tatar": "tt",
+    "telugu": "te",
+    "thai": "th",
+    "turkish": "tr",
+    "turkmen": "tk",
+    "ukrainian": "uk",
+    "urdu": "ur",
+    "uyghur": "ug",
+    "uzbek": "uz",
+    "vietnamese": "vi",
+    "welsh": "cy",
+    "xhosa": "xh",
+    "yiddish": "yi",
+    "yoruba": "yo",
+    "zulu": "zu",
+}
 
 
 class IRC:
     irc = socket.socket()
 
     def __init__(self):
-        # Deefine the socket
+        # Define the socket
         self.irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.irc.settimeout(5)
 
@@ -76,12 +193,17 @@ class Keywords:
 
     INQUIRIES = [
         "How are you?",
+        "How are you doing?",
+        "How is it going?",
+        "How's it going?"
         "What's happening?",
+        "What is happening?",
     ]
 
     SECONDARY_INQUIRIES = [
         "How about you?",
         "And yourself?",
+        "And you?",
     ]
 
     INQUIRY_REPLIES = [
@@ -126,6 +248,7 @@ class Bot:
         self.in_conversation_with = None
         self.time_since_last_contact = 0
         self.running = True
+        self.language = "en"
 
         # Start the background thread to update time_since_last_contact
         self.thread = threading.Thread(target=self._update_time_since_last_contact)
@@ -141,10 +264,28 @@ class Bot:
             time.sleep(1)  # Wait for 1 second
             self.time_since_last_contact += 1  # Increase by 1
 
+    def translate_text(self, text):
+        translate_client = translate.Client()
+
+        # Text to translate
+        if self.language != "en":
+            result = translate_client.translate(text, target_language=self.language)
+        else:
+            return text
+        return result['translatedText']
+
+    def understand_text(self, text):
+        translate_client = translate.Client()
+        result = translate_client.translate(text, target_language="en")
+        return result['translatedText']
+
     def stop(self):
         # Stop the background thread
         self.running = False
         self.thread.join()
+
+    def get_language_code(self, language_name):
+        return LANGUAGE_CODES.get(language_name.lower())
 
     def get_response(self):
         return self.irc.get_response()
@@ -155,9 +296,27 @@ class Bot:
             time.sleep(1.5)
             self.time_since_last_contact = 0
             user_name = text.split(":")[1].split("!")[0]
+            user_name = user_name
+            detected_lang = detect(text)
+            if detected_lang != "en" and detected_lang in LANGUAGE_CODES.values():
+                self.language = detected_lang
+                text = self.understand_text(text)
+            elif detected_lang not in LANGUAGE_CODES.values():
+                self.irc.send(self.channel, f"Detected language {detected_lang} is not currently supported.")
+            else:
+                self.language = "en"
+
 
             if "die!" in text:
                 self.die()
+            elif "talk to me in" in text.lower() or "speak to me in" in text.lower():
+                language_name = text.split("in")[-1].strip().lower()
+                if self.get_language_code(language_name):
+                    self.language = self.get_language_code(language_name)
+                    self.irc.send(self.channel, f"{self.in_conversation_with}: " + self.translate_text(f"I will now talk to you in {language_name}."))
+                else:
+                    self.irc.send(self.channel, f"{language_name} is not currently supported.")
+
             elif Keywords.message_in_set(text, Keywords.GREETINGS):
                 self.respond_to_greeting(user_name)
             elif Keywords.message_in_set(text, Keywords.INQUIRIES) or Keywords.message_in_set(text, Keywords.SECONDARY_INQUIRIES):
@@ -176,7 +335,8 @@ class Bot:
 
             # Reach out to random user
             user_list = self.names().split()
-            random_user = random.choice(user_list)
+            user_list.remove(self.botnick)
+            random_user = random.choice(user_list)[1:]
 
             msg = f"{random_user}: Hello"
 
@@ -195,7 +355,7 @@ class Bot:
             msg = f"{self.in_conversation_with}: {give_up_msg}"
             bot.forget(send_message=False)
 
-        self.irc.send(self.channel, msg)
+        self.irc.send(self.channel, self.translate_text(msg))
 
     def respond_to_greeting(self, user_name):
 
@@ -227,7 +387,7 @@ class Bot:
             response_msg = f"{user_name}: please don't bother me, I am talking with {self.in_conversation_with}"
 
         # Send response message
-        self.irc.send(self.channel, response_msg)
+        self.irc.send(self.channel, self.translate_text(response_msg))
 
     def respond_to_inquiry(self, user_name):
 
@@ -239,28 +399,28 @@ class Bot:
         if user_name != self.in_conversation_with:
             # Tell outside user that bot is busy
             self.irc.send(self.channel,
-                          f"{user_name}: please don't bother me, I am talking with {self.in_conversation_with}")
+                          self.translate_text(f"{user_name}: please don't bother me, I am talking with {self.in_conversation_with}"))
             return
 
         # Reply to inquiry
-        self.irc.send(self.channel, f"{self.in_conversation_with}: {random.choice(Keywords.INQUIRY_REPLIES)}")
+        self.irc.send(self.channel, f"{self.in_conversation_with}: " + self.translate_text(f"{random.choice(Keywords.INQUIRY_REPLIES)}"))
 
         # Bot is second speaker, this was an initial inquiry, must give one back
         if self.status == BotStatus.WAITING_FOR_INQUIRY:
-            self.irc.send(self.channel, f"{self.in_conversation_with}: {random.choice(Keywords.SECONDARY_INQUIRIES)}")
+            self.irc.send(self.channel, f"{self.in_conversation_with}: " + self.translate_text(f"{random.choice(Keywords.SECONDARY_INQUIRIES)}"))
 
     def die(self):
-        self.irc.send(self.channel, "really? OK, fine.")
+        self.irc.send(self.channel, self.translate_text("really? OK, fine."))
         self.irc.command("QUIT")
         sys.exit()
 
     def usage(self):
-        self.irc.send(self.channel, f"My name is {self.botnick}. I was created by Beck S and Gavin L, CSC482-01")
+        self.irc.send(self.channel, self.translate_text(f"My name is {self.botnick}. I was created by Beck S and Gavin L, CSC482-01. I can speak multiple languages, start talking in another language or ask me, 'talk to me in X' language."))
 
     def users(self):
         user_list = self.names()
         if user_list:
-            self.irc.send(self.channel, f"Users: {user_list}")
+            self.irc.send(self.channel, self.translate_text("Users: ") + f"{user_list}")
 
     def names(self):
         # Send the NAMES command to get the user list
@@ -285,13 +445,13 @@ class Bot:
         self.time_since_last_contact = 0
 
         if send_message:
-            self.irc.send(self.channel, "forgetting everything")
+            self.irc.send(self.channel, self.translate_text("forgetting everything"))
 
 
 ## IRC Config
 _server = "irc.libera.chat"  # Provide a valid server IP/Hostname
 _port = 6667
-_channel = "#csc482"
+_channel = "#chatbottest"
 _botnick = "bg-test-bot"
 
 bot = Bot(_server, _port, _channel, _botnick)
