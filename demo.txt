@@ -48,6 +48,16 @@
 [8:15:38 PM] <beck1> bg-bot: recipe: oak_stairs
 [8:15:40 PM] <bg-bot> beck1: To craft oak stairs, you need 6 oak planks.
 
+# Phase 3 Implementation: Gavin (Multi Language Support)
+[10:55:11 PM] <Gavin> bg-bot: hello
+[10:55:13 PM] <bg-bot> Gavin: Hey
+[10:55:19 PM] <Gavin> bg-bot: speak to me in japanese
+[10:55:22 PM] <bg-bot> Gavin: これから日本語で話します。
+[10:55:29 PM] <Gavin> bg-bot: leuk om je te zien
+[10:55:32 PM] <bg-bot> Gavin: uhm, hallo
+[10:55:41 PM] <Gavin> bg-bot: nice to see you
+[10:55:42 PM] <bg-bot> Gavin: umm, hi
+
 # Die command
 [8:15:53 PM] <beck1> bg-bot: die!
 [8:15:55 PM] <bg-bot> really? OK, fine.
